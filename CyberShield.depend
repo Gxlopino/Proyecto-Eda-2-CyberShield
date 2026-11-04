@@ -1,0 +1,23 @@
+# depslib dependency file v1.0
+1793644625 source:d:\eda2\cybershield\maxheap.cpp
+	<iostream>
+	"MaxHeap.h"
+
+1793755689 d:\eda2\cybershield\maxheap.h
+	"Incidente.h"
+
+1793753143 d:\eda2\cybershield\incidente.h
+	<string>
+
+1793755680 source:d:\eda2\cybershield\main.cpp
+	<iostream>
+	"TablaHash.h"
+	"MaxHeap.h"
+
+1793755627 d:\eda2\cybershield\tablahash.h
+	"Incidente.h"
+
+1793755718 source:d:\eda2\cybershield\tablahash.cpp
+	<iostream>
+	"TablaHash.h"
+
