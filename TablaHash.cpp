@@ -21,19 +21,27 @@ using namespace std;
     }
 
     long long TablaHash::getSondeos() const {
-    return sondeos;
+        return sondeos;
     }
 
     int TablaHash::getUsados() const {
-    return ocupados;
+        return ocupados;
+    }
+
+    int TablaHash::getTam() const {
+        return tam;
     }
 
     int TablaHash::getCapacidad() const {
-    return tam;
+        return tam;
     }
 
-    Incidente* TablaHash::getEn(int i) const {
-    return tabla[i];
+    int TablaHash::getOcupados() const {
+        return ocupados;
+    }
+
+    Incidente* TablaHash::getPosicion(int i) const {
+        return tabla[i];
     }
 
     unsigned long TablaHash::funcionHash(const string& id) {

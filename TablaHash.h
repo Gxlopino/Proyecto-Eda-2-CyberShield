@@ -15,8 +15,10 @@ public:
     ~TablaHash();
     long long getSondeos() const;
     int getUsados() const;
+    int getOcupados() const;
+    int getTam() const;
     int getCapacidad() const;
-    Incidente* getEn(int i) const;
+    Incidente* getPosicion(int i) const;
     Incidente* buscarOInsertar(const string& id);
     double FactorCarga() const;
     void print();

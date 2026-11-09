@@ -4,17 +4,25 @@
 
 class MaxHeap {
 private:
-    int* heap;
+    Incidente** heap;
     int tam;
     int last;
+    long long comparaciones;
+    long long intercambios;
+    bool tieneMayorPrioridad(Incidente* a, Incidente* b);
+    void intercambiar(int i , int j);
 
 public:
     MaxHeap(int n);
     ~MaxHeap();
 
-    void insert(int n);
+    void insertar(Incidente* n);
+    Incidente* SacarHeap();
+    bool estaVacio();
+    long long getComparaciones();
+    long long getIntercambios();
     void print();
-    void SacarHeap();
+
 };
 
 #endif
