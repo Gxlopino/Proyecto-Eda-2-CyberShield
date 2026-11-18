@@ -24,15 +24,7 @@ using namespace std;
         return sondeos;
     }
 
-    int TablaHash::getUsados() const {
-        return ocupados;
-    }
-
     int TablaHash::getTam() const {
-        return tam;
-    }
-
-    int TablaHash::getCapacidad() const {
         return tam;
     }
 
