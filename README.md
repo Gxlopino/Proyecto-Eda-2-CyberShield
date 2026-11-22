@@ -16,7 +16,7 @@ CyberShield agrupa las alertas por incidente, suma sus severidades y genera un r
 
 ## Guía para ejecutar y evaluar el proyecto
 
-Se requiere un compilador **C++11 o superior con MinGW/GCC**. La opción **C++14 (`-std=c++14`)** de Code::Blocks es suficiente para este proyecto; también se puede utilizar C++17. Python 3 es opcional y sirve para comprobar los rankings.
+Se requiere un compilador **C++11 o superior con MinGW/GCC**. La opción **C++14 (`-std=c++14`)** de Code::Blocks es suficiente para este proyecto; también se puede utilizar C++17. Python 3 es opcional para ejecutar el programa C++ y se utiliza en las herramientas auxiliares para comprobar rankings y automatizar las mediciones.
 
 ### 1. Descargar el repositorio
 
@@ -38,9 +38,9 @@ La raíz del proyecto es la carpeta que contiene `CyberShield.cbp`, `main.cpp`, 
 5. En **Project → Build options…**, seleccionar el nombre del proyecto en el panel izquierdo para aplicar la configuración a Debug y Release. Abrir **Compiler settings → Compiler Flags** y marcar **Have g++ follow the C++14 ISO C++ language standard [-std=c++14]**. Dejar una sola opción de estándar seleccionada. Si ya está marcada en **Settings → Compiler…**, no hace falta agregar otra; revisar también las opciones del proyecto para evitar estándares contradictorios.
 6. Elegir el destino **Debug** en la barra de compilación y seleccionar **Build → Rebuild**. Comprobar que termine sin errores.
 
-| Destino | Ejecutable generado | Uso |
-|---|---|---|
-| Debug | `bin\Debug\CyberShield.exe` | Ejecución y depuración |
+| Destino | Ejecutable generado             | Uso                                        |
+| ------- | ------------------------------- | ------------------------------------------ |
+| Debug   | `bin\Debug\CyberShield.exe`   | Ejecución y depuración                   |
 | Release | `bin\Release\CyberShield.exe` | Mediciones de rendimiento; incluye `-O2` |
 
 Después de cambiar el código, guardar y recompilar el mismo destino cuyo ejecutable se utilizará.
@@ -55,11 +55,11 @@ El programa necesita exactamente **tres argumentos**, en este orden:
 CyberShield.exe entrada.csv ranking.csv metricas.txt
 ```
 
-| Posición | Significado |
-|---|---|
-| `argv[0]` | Ejecutable |
-| `argv[1]` | CSV de entrada |
-| `argv[2]` | CSV de ranking que se generará |
+| Posición   | Significado                           |
+| ----------- | ------------------------------------- |
+| `argv[0]` | Ejecutable                            |
+| `argv[1]` | CSV de entrada                        |
+| `argv[2]` | CSV de ranking que se generará       |
 | `argv[3]` | Archivo de métricas que se generará |
 
 `argc` vale 4 porque cuenta también el ejecutable. El programa no solicita datos por teclado durante su ejecución.
@@ -70,7 +70,6 @@ CyberShield.exe entrada.csv ranking.csv metricas.txt
    ```text
    "D:\EDA2\CyberShield\datos\publico_01_basico.csv" "D:\EDA2\CyberShield\ranking.csv" "D:\EDA2\CyberShield\metricas.txt"
    ```
-
 3. Aceptar y presionar **F9 — Build and run**.
 
 Se mostrará un resumen con `n`, `u`, sondeos, comparaciones, intercambios y tiempo. Se generarán `ranking.csv` y `metricas.txt` en la raíz del proyecto. Las rutas absolutas evitan depender del directorio de trabajo configurado en Code::Blocks. Las carpetas de salida deben existir.
@@ -157,6 +156,70 @@ Write-Host "`nCasos con errores de verificacion: $fallos"
 
 Si el equipo utiliza el lanzador `py -3`, reemplazar `python` por `py -3`. El programa C++ no requiere Python para funcionar.
 
+### 6. Medir tiempos y obtener medianas con Python
+
+La herramienta `herramientas/medir_tiempos.py` automatiza las pruebas de rendimiento. Ejecuta cada CSV de `datos/` **tres veces por defecto**, registra los contadores y los tiempos, compara el ranking con su referencia cuando existe y calcula las **medianas internas y externas por separado**. Con los 13 casos incluidos realiza 39 ejecuciones. Cada ejecución inicia un proceso nuevo, con estructuras y contadores vacíos.
+
+Su finalidad es conservar las muestras y hacer reproducibles las mediciones del informe. La consolidación y el ranking siguen a cargo del programa C++; Python se encarga de ejecutarlo, medir y registrar. El script utiliza únicamente la biblioteca estándar de Python 3 y no compila el ejecutable.
+
+#### Ejecutar la medición
+
+Primero seleccionar **Release** en Code::Blocks y ejecutar **Build → Rebuild**. Después abrir PowerShell en la raíz del proyecto y ejecutar, ajustando la ruta del compilador si fuera necesario:
+
+```powershell
+Set-Location 'D:\EDA2\CyberShield'
+$env:Path = "C:\MinGW\bin;$env:Path"
+python .\herramientas\medir_tiempos.py --exe .\bin\Release\CyberShield.exe
+```
+
+La modificación del `PATH` permite localizar las DLL de MinGW y dura solo en esa ventana de PowerShell. Debe utilizarse la carpeta `bin` del compilador que generó el ejecutable.
+
+Para comprobar el funcionamiento con un ejecutable **Debug** ya compilado:
+
+```powershell
+python .\herramientas\medir_tiempos.py --exe .\bin\Debug\CyberShield.exe
+```
+
+Si el ejecutable se compiló en la raíz, usar `--exe .\CyberShield.exe`. Si `python` no está disponible pero existe el lanzador, reemplazarlo por `py -3`. Las rutas relativas se interpretan desde la carpeta actual de PowerShell. Para comparar tiempos, mantener el mismo destino y las mismas opciones de compilación; identificar por separado las mediciones Debug y Release.
+
+#### Qué mide cada tiempo
+
+| Tiempo  | Cómo se obtiene                                                                                                                                      | Qué incluye                                                                                                                 |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Interno | El C++ mide el intervalo con `chrono` y Python lee `tiempo_proceso_ms` de su archivo de métricas.                                                | Consolidación, construcción del heap y extracción del ranking en memoria; excluye lectura del CSV y escritura de salidas. |
+| Externo | Python llama a `time.perf_counter()` antes de `subprocess.run()` y después de que el proceso termine; resta los instantes y multiplica por 1000. | Arranque, lectura, procesamiento, escritura, limpieza y el costo de lanzar y esperar el proceso con captura de consola.      |
+
+La compilación, la lectura de métricas desde Python, el guardado de las capturas de consola y la comparación con los esperados quedan **fuera del intervalo externo**. La diferencia entre ambos tiempos no representa exclusivamente lectura y escritura: también contiene otros costos de ejecución.
+
+La **mediana no es el promedio**. Si las tres muestras son `8`, `20` y `9 ms`, se ordenan como `8`, `9`, `20` y se reporta `9 ms`, el valor central. Se calcula una mediana para los tiempos internos y otra para los externos; no se suman ni se mezclan. Un valor interno `0.000 ms` puede deberse a la resolución del reloj o al redondeo del archivo C++.
+
+#### Dónde se guardan los resultados
+
+Cada lanzamiento del script crea una carpeta nueva con fecha y hora. Al finalizar muestra su ruta exacta:
+
+```text
+resultados_mediciones/
+└── medicion_FECHA_HORA/
+    ├── muestras.csv
+    ├── resumen_medianas.csv
+    ├── entorno.json
+    ├── publico_01_basico_r1_ranking.csv
+    ├── publico_01_basico_r1_metricas.txt
+    ├── publico_01_basico_r1_stdout.txt
+    ├── publico_01_basico_r1_stderr.txt
+    └── ...
+```
+
+| Archivo                                | Para qué sirve                                                                                                                                                  |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `muestras.csv`                       | Conserva una fila por ejecución: caso, repetición, `n`, `u`, sondeos, comparaciones, intercambios, tiempo interno, tiempo externo y estado de validación. |
+| `resumen_medianas.csv`               | Resume cada caso con `n`, `u`, número de repeticiones y medianas interna y externa. Se puede abrir en Excel para preparar tablas y gráficos.               |
+| `entorno.json`                       | Registra fecha, sistema, versión de Python, procesador y datos de compilación y RAM declarados, además de las rutas y el método de medición.                |
+| `*_ranking.csv` y `*_metricas.txt` | Conservan las salidas originales de C++ de cada caso y repetición.                                                                                              |
+| `*_stdout.txt` y `*_stderr.txt`    | Conservan los mensajes de salida y error para revisar una ejecución o diagnosticar fallos.                                                                      |
+
+Cuando existe `esperados/nombre.esperado.csv`, se compara el encabezado y todas las filas del ranking. `CORRECTO` indica coincidencia; `SIN_REFERENCIA` indica que no había archivo esperado y no se verificó la corrección. El script se detiene si el ejecutable falla o si el ranking difiere de su referencia. En una sesión interrumpida puede haber muestras y resúmenes parciales: comprobar el mensaje final de éxito y que estén todos los casos y repeticiones.
+
 ## Entrada y criterio del ranking
 
 El CSV debe tener encabezado y estas tres columnas, en este orden:
@@ -203,24 +266,24 @@ El **max-heap** almacena punteros a los incidentes de la tabla. `insertar` reaju
 
 Con `n` alertas y `u` incidentes únicos:
 
-| Etapa | Costo |
-|---|---|
-| Consolidación en la tabla hash | O(n) esperado y amortizado, con identificadores de longitud acotada y distribución adecuada del hash |
-| Construcción del heap mediante inserciones | O(u log u) |
-| Extracción del ranking completo | O(u log u) |
-| Total del procesamiento | O(n + u log u) esperado |
-| Memoria auxiliar | O(n + u) |
+| Etapa                                       | Costo                                                                                                 |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Consolidación en la tabla hash             | O(n) esperado y amortizado, con identificadores de longitud acotada y distribución adecuada del hash |
+| Construcción del heap mediante inserciones | O(u log u)                                                                                            |
+| Extracción del ranking completo            | O(u log u)                                                                                            |
+| Total del procesamiento                     | O(n + u log u) esperado                                                                               |
+| Memoria auxiliar                            | O(n + u)                                                                                              |
 
 El costo esperado del hash no es una garantía de peor caso: muchas colisiones pueden degradar el rendimiento. Las estructuras se implementan sin `vector`, `map`, `set`, `unordered_map`, `priority_queue` ni `sort`. Se utilizan `string`, flujos de entrada y salida, `chrono` e `iomanip`.
 
 ## Métricas y mediciones
 
-| Métrica | Qué registra |
-|---|---|
-| `sondeos_hash` | Cada cubeta examinada por `buscarOInsertar`, incluida la cubeta vacía donde termina una inserción. Excluye los sondeos del rehash. |
-| `comparaciones_heap` | Cada llamada a `tieneMayorPrioridad`, con el desempate cuando corresponde. |
-| `intercambios_heap` | Cada llamada a `intercambiar` durante los reajustes. La asignación del último elemento a la raíz al extraer no se cuenta como intercambio. |
-| `tiempo_proceso_ms` | Consolidación y ranking, incluidas las reservas realizadas dentro del intervalo. Excluye lectura del CSV y escritura de salidas. |
+| Métrica               | Qué registra                                                                                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sondeos_hash`       | Cada cubeta examinada por `buscarOInsertar`, incluida la cubeta vacía donde termina una inserción. Excluye los sondeos del rehash.          |
+| `comparaciones_heap` | Cada llamada a `tieneMayorPrioridad`, con el desempate cuando corresponde.                                                                    |
+| `intercambios_heap`  | Cada llamada a `intercambiar` durante los reajustes. La asignación del último elemento a la raíz al extraer no se cuenta como intercambio. |
+| `tiempo_proceso_ms`  | Consolidación y ranking, incluidas las reservas realizadas dentro del intervalo. Excluye lectura del CSV y escritura de salidas.               |
 
 Los contadores se incrementan durante las operaciones reales. Los tiempos dependen del equipo, compilador, optimización y carga del sistema. `0.000 ms` no significa tiempo nulo: puede deberse a la resolución del reloj o al formato de tres decimales.
 
@@ -233,12 +296,12 @@ En la verificación local del 19 de noviembre de 2026, los **13 rankings coincid
 Los tiempos de esta tabla corresponden a **una ejecución local Debug**, no a medianas ni a una garantía de rendimiento en otros equipos:
 
 | Alertas distintas | Incidentes | Sondeos | Comparaciones | Intercambios | Tiempo (ms) |
-|---:|---:|---:|---:|---:|---:|
-| 1 000 | 1 000 | 2 805 | 17 115 | 8 495 | 1.016 |
-| 2 000 | 2 000 | 6 061 | 38 391 | 19 114 | 2.503 |
-| 4 000 | 4 000 | 13 240 | 84 817 | 42 198 | 4.022 |
-| 8 000 | 8 000 | 25 065 | 185 472 | 92 351 | 10.885 |
-| 16 000 | 16 000 | 50 773 | 402 886 | 200 826 | 15.583 |
+| ----------------: | ---------: | ------: | ------------: | -----------: | ----------: |
+|             1 000 |      1 000 |   2 805 |        17 115 |        8 495 |       1.016 |
+|             2 000 |      2 000 |   6 061 |        38 391 |       19 114 |       2.503 |
+|             4 000 |      4 000 |  13 240 |        84 817 |       42 198 |       4.022 |
+|             8 000 |      8 000 |  25 065 |       185 472 |       92 351 |      10.885 |
+|            16 000 |     16 000 |  50 773 |       402 886 |      200 826 |      15.583 |
 
 Con `C(n) = sondeos_hash + comparaciones_heap`, se obtiene:
 
@@ -262,17 +325,20 @@ Esto genera el ejecutable en la raíz. Para usarlo en el bloque de todos los cas
 
 ## Solución de problemas
 
-| Situación | Solución |
-|---|---|
-| Aparece `Uso: ... entrada.csv ranking.csv metricas.txt` | Configurar los tres argumentos en **Project → Set programs' arguments…** para el destino activo. |
-| Code::Blocks no encuentra el compilador | Revisar **Settings → Compiler → Toolchain executables** y la instalación de MinGW. |
-| Falta una DLL o aparece `-1073741515` / `0xC0000135` | Agregar al `PATH` la carpeta `bin` del mismo MinGW usado para compilar. Si persiste, revisar que su instalación y bibliotecas estén completas. |
-| Solo aparece `Procesando`, sin resultados | Consultar el código de salida. Ese mensaje lo imprime PowerShell antes de ejecutar el programa y no confirma que haya funcionado. |
-| `No se pudo abrir` | Comprobar que el CSV exista y que su ruta sea correcta. Colocar comillas si contiene espacios. |
-| `No se pudo escribir` | Comprobar que la carpeta de salida exista y tenga permisos de escritura. |
-| No existe el ejecutable Debug | Compilar Debug o, si se compiló Release, usar `bin\Release\CyberShield.exe`. |
-| Los cambios no aparecen en las salidas | Guardar y recompilar el destino cuyo ejecutable se está invocando. |
-| La consola vuelve a `PS ...>` | La ejecución terminó. Revisar el resumen y los errores; no es necesario seguir esperando. |
+| Situación                                                | Solución                                                                                                                                                                                         |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Aparece `Uso: ... entrada.csv ranking.csv metricas.txt` | Configurar los tres argumentos en **Project → Set programs' arguments…** para el destino activo.                                                                                          |
+| Code::Blocks no encuentra el compilador                   | Revisar **Settings → Compiler → Toolchain executables** y la instalación de MinGW.                                                                                                       |
+| Falta una DLL o aparece `-1073741515` / `0xC0000135`  | Agregar al `PATH` la carpeta `bin` del mismo MinGW usado para compilar. Si persiste, revisar que su instalación y bibliotecas estén completas.                                              |
+| Python informa `Fallo ... (codigo 3221225781)`          | Es la representación sin signo de `0xC0000135`: Windows no pudo cargar una DLL necesaria. Agregar la carpeta `bin` del compilador real al `PATH` en esa misma ventana y volver a ejecutar. |
+| `medir_tiempos.py` informa `No existe el ejecutable`  | Compilar el destino indicado en `--exe`. Si solo existe Debug, usar su ruta; para medir Release, seleccionarlo y recompilar primero.                                                            |
+| PowerShell no reconoce `python`                         | Probar `py -3`. Si tampoco está disponible, instalar Python 3 y volver a abrir PowerShell.                                                                                                     |
+| Solo aparece `Procesando`, sin resultados               | Consultar el código de salida. Ese mensaje lo imprime PowerShell antes de ejecutar el programa y no confirma que haya funcionado.                                                                |
+| `No se pudo abrir`                                      | Comprobar que el CSV exista y que su ruta sea correcta. Colocar comillas si contiene espacios.                                                                                                    |
+| `No se pudo escribir`                                   | Comprobar que la carpeta de salida exista y tenga permisos de escritura.                                                                                                                          |
+| No existe el ejecutable Debug                             | Compilar Debug o, si se compiló Release, usar `bin\Release\CyberShield.exe`.                                                                                                                   |
+| Los cambios no aparecen en las salidas                    | Guardar y recompilar el destino cuyo ejecutable se está invocando.                                                                                                                               |
+| La consola vuelve a `PS ...>`                           | La ejecución terminó. Revisar el resumen y los errores; no es necesario seguir esperando.                                                                                                       |
 
 Utilizar rutas diferentes para entrada, ranking y métricas. Para volver a generar resultados, ejecutar otra vez después de recompilar los cambios.
 
@@ -290,8 +356,10 @@ CyberShield/
 ├── datos/               # 13 casos CSV
 ├── esperados/           # Rankings de referencia
 ├── herramientas/
-│   └── comparar.py      # Comparador de rankings con Python 3
+│   ├── comparar.py      # Comparador de rankings con Python 3
+│   └── medir_tiempos.py # Repeticiones, tiempo externo y medianas
 ├── resultados/          # Archivos generados por las pruebas
+├── resultados_mediciones/ # Sesiones de medición generadas por Python
 └── README.md
 ```
 
