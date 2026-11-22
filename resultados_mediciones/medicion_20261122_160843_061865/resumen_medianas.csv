@@ -1,0 +1,14 @@
+﻿caso,n,u,repeticiones,mediana_interna_ms,mediana_externa_ms,validacion
+empates_8000,8000,3000,3,4.0,31.6545,CORRECTO
+escala_distintos_01000,1000,1000,3,0.999,18.3007,CORRECTO
+escala_distintos_02000,2000,2000,3,1.999,24.9917,CORRECTO
+escala_distintos_04000,4000,4000,3,4.112,29.3787,CORRECTO
+escala_distintos_08000,8000,8000,3,8.036,44.7055,CORRECTO
+escala_distintos_16000,16000,16000,3,22.188,79.5115,CORRECTO
+mixto_10000,10000,2500,3,4.0,35.3529,CORRECTO
+publico_01_basico,7,4,3,0.0,17.5775,CORRECTO
+publico_02_empates,6,5,3,0.0,17.7563,CORRECTO
+publico_03_repetidos,6,2,3,0.0,18.4656,CORRECTO
+publico_04_distintos,5,5,3,0.0,18.4874,CORRECTO
+publico_05_un_incidente,1,1,3,0.0,14.5055,CORRECTO
+repetidos_10000,10000,100,3,0.983,28.4919,CORRECTO

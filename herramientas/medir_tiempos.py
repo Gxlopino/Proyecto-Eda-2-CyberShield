@@ -4,7 +4,8 @@
 Ejemplo desde la raiz del proyecto:
 python herramientas/medir_tiempos.py --exe bin/Release/CyberShield.exe
 
-Solo utiliza la biblioteca estandar de Python 3.
+Solo utiliza la biblioteca estandar de Python 3 y reutiliza comparar.py
+para validar los rankings fuera del tiempo medido.
 """
 
 import argparse
@@ -52,6 +53,9 @@ def main():
     casos = sorted(datos.glob("*.csv"))
     if not casos:
         parser.error("No hay archivos CSV en " + str(datos))
+    comparador = Path(__file__).resolve().with_name("comparar.py")
+    if not comparador.is_file():
+        parser.error("Falta comparar.py junto a medir_tiempos.py: " + str(comparador))
 
     # Una carpeta nueva evita confundir resultados de sesiones anteriores.
     ahora = datetime.now().astimezone()
@@ -63,7 +67,7 @@ def main():
     for caso in casos:
         n = max(0, len(leer_csv(caso)) - 1)
         esperado = args.esperados.resolve() / (caso.stem + ".esperado.csv")
-        referencia = leer_csv(esperado) if esperado.is_file() else None
+        tiene_referencia = esperado.is_file()
         ejecuciones = []
 
         for repeticion in range(1, args.repeticiones + 1):
@@ -91,8 +95,15 @@ def main():
                            metricas.read_text(encoding="utf-8-sig").splitlines()
                            if linea.strip())
             resultado = leer_csv(ranking)
-            if referencia is not None and resultado != referencia:
-                raise RuntimeError("Ranking distinto al esperado: " + caso.name)
+            if tiene_referencia:
+                # Reutiliza el verificador existente, despues de parar el reloj.
+                comprobacion = subprocess.run(
+                    [sys.executable, str(comparador), str(esperado), str(ranking)]
+                )
+                if comprobacion.returncode != 0:
+                    raise RuntimeError(
+                        "comparar.py detecto un fallo al validar " + caso.name
+                        + " (codigo " + str(comprobacion.returncode) + ").")
             fila = {
                 "caso": caso.stem,
                 "repeticion": repeticion,
@@ -103,7 +114,7 @@ def main():
                 "intercambios_heap": int(valores["intercambios_heap"]),
                 "tiempo_interno_ms": float(valores["tiempo_proceso_ms"]),
                 "tiempo_externo_ms": round(tiempo_externo_ms, 6),
-                "validacion": "CORRECTO" if referencia is not None else "SIN_REFERENCIA",
+                "validacion": "CORRECTO" if tiene_referencia else "SIN_REFERENCIA",
             }
             muestras.append(fila)
             ejecuciones.append(fila)

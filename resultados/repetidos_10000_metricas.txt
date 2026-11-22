@@ -1,4 +1,4 @@
 sondeos_hash=10648
 comparaciones_heap=1056
 intercambios_heap=521
-tiempo_proceso_ms=1.027
+tiempo_proceso_ms=1.000

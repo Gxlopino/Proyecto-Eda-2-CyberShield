@@ -1,0 +1,1 @@
+n=10000 u=100 sondeos_hash=10648 comparaciones_heap=1056 intercambios_heap=521 tiempo_ms=1.000
