@@ -9,8 +9,6 @@ Solo utiliza la biblioteca estandar de Python 3.
 
 import argparse
 import csv
-import json
-import platform
 import statistics
 import subprocess
 import sys
@@ -41,10 +39,6 @@ def main():
                         help="Referencias opcionales nombre.esperado.csv.")
     parser.add_argument("--salida", type=Path, default=Path("resultados_mediciones"))
     parser.add_argument("--repeticiones", type=int, default=3)
-    parser.add_argument("--compilador", default="No indicado")
-    parser.add_argument("--opciones", default="No indicadas")
-    parser.add_argument("--procesador", default=platform.processor() or "No identificado")
-    parser.add_argument("--ram-gb", type=float, default=None)
     args = parser.parse_args()
 
     if args.repeticiones < 3:
@@ -63,23 +57,6 @@ def main():
     ahora = datetime.now().astimezone()
     sesion = args.salida.resolve() / ahora.strftime("medicion_%Y%m%d_%H%M%S_%f")
     sesion.mkdir(parents=True, exist_ok=False)
-    entorno = {
-        "fecha": ahora.isoformat(),
-        "sistema": platform.platform(),
-        "python": sys.version,
-        "procesador": args.procesador,
-        "ram_gb_declarada": args.ram_gb,
-        "compilador_declarado": args.compilador,
-        "opciones_declaradas": args.opciones,
-        "ejecutable": str(exe),
-        "datos": str(datos),
-        "repeticiones_por_caso": args.repeticiones,
-        "metodo_externo": "perf_counter alrededor de subprocess.run con espera y captura de consola",
-        "nota": "Compilacion, lectura de metricas y comparacion quedan fuera del tiempo externo. "
-                "El script no comprueba como se compilo el ejecutable; declara las opciones reales.",
-    }
-    (sesion / "entorno.json").write_text(
-        json.dumps(entorno, ensure_ascii=False, indent=2), encoding="utf-8")
     muestras = []
     resumen = []
 

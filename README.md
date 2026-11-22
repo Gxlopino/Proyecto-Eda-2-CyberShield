@@ -202,11 +202,10 @@ resultados_mediciones/
 └── medicion_FECHA_HORA/
     ├── muestras.csv
     ├── resumen_medianas.csv
-    ├── entorno.json
     ├── publico_01_basico_r1_ranking.csv
     ├── publico_01_basico_r1_metricas.txt
     ├── publico_01_basico_r1_stdout.txt
-    ├── publico_01_basico_r1_stderr.txt
+    ├── publico_01_basico_r1_rstderr.txt
     └── ...
 ```
 
@@ -214,7 +213,6 @@ resultados_mediciones/
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `muestras.csv`                       | Conserva una fila por ejecución: caso, repetición, `n`, `u`, sondeos, comparaciones, intercambios, tiempo interno, tiempo externo y estado de validación. |
 | `resumen_medianas.csv`               | Resume cada caso con `n`, `u`, número de repeticiones y medianas interna y externa. Se puede abrir en Excel para preparar tablas y gráficos.               |
-| `entorno.json`                       | Registra fecha, sistema, versión de Python, procesador y datos de compilación y RAM declarados, además de las rutas y el método de medición.                |
 | `*_ranking.csv` y `*_metricas.txt` | Conservan las salidas originales de C++ de cada caso y repetición.                                                                                              |
 | `*_stdout.txt` y `*_stderr.txt`    | Conservan los mensajes de salida y error para revisar una ejecución o diagnosticar fallos.                                                                      |
 
@@ -309,19 +307,6 @@ Con `C(n) = sondeos_hash + comparaciones_heap`, se obtiene:
 - `C(16000) / C(8000) ≈ 2.155`.
 
 Ambos cumplen el umbral orientativo de 3.0 utilizado en el proyecto y son compatibles con el crecimiento esperado. Las mediciones complementan el análisis de complejidad.
-
-## Compilación alternativa con MinGW en PowerShell
-
-Desde la raíz del proyecto:
-
-```powershell
-$env:Path = "C:\MinGW\bin;$env:Path"
-g++ -std=c++14 -O2 -Wall main.cpp TablaHash.cpp MaxHeap.cpp -o CyberShield.exe
-if ($LASTEXITCODE -ne 0) { throw 'La compilacion fallo.' }
-.\CyberShield.exe .\datos\publico_01_basico.csv ranking.csv metricas.txt
-```
-
-Esto genera el ejecutable en la raíz. Para usarlo en el bloque de todos los casos, establecer `$exe = Join-Path $PWD.Path 'CyberShield.exe'`.
 
 ## Solución de problemas
 

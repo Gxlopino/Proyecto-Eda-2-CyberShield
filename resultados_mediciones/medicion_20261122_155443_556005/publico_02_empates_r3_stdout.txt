@@ -1,0 +1,1 @@
+n=6 u=5 sondeos_hash=6 comparaciones_heap=12 intercambios_heap=8 tiempo_ms=0.000
