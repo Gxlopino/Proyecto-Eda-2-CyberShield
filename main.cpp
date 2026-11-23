@@ -73,7 +73,6 @@ int main(int argc, char* argv[]) {
     string rutaRanking = argv[2];
     string rutaMetricas = argv[3];
 
-    // Comprobar que los archivos no sean los mismos
     if (rutaEntrada == rutaRanking ||
         rutaEntrada == rutaMetricas ||
         rutaRanking == rutaMetricas) {
@@ -81,8 +80,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-
-    // Lectura (NO entra en el tiempo medido)
     int n = 0;
     Alerta* alertas = leerCSV(rutaEntrada, n);
     if (alertas == nullptr) {
@@ -90,8 +87,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Consolidacion + ranking (SI entra en el tiempo medido)
-    TablaHash tabla(16); // estado inicial vacio en cada ejecucion
+    TablaHash tabla(16);
     Incidente** ranking = nullptr;
     int u = 0;
     int pos = 0;
@@ -99,7 +95,6 @@ int main(int argc, char* argv[]) {
 
     auto t0 = chrono::high_resolution_clock::now();
 
-    // Añadir alertas en la tabla hash: O(n) esperado
     for (int i = 0; i < n; i++) {
         Incidente* inc = tabla.buscarOInsertar(alertas[i].incidente);
         inc->cantidad_alertas += 1;
@@ -107,7 +102,6 @@ int main(int argc, char* argv[]) {
     }
     u = tabla.getOcupados();
 
-    // Pasar los incidentes unicos al max-heap: O(u log u)
     heap = new MaxHeap(u > 0 ? u : 1);
     int cap = tabla.getTam();
     for (int i = 0; i < cap; i++) {
@@ -115,7 +109,6 @@ int main(int argc, char* argv[]) {
         if (inc != nullptr) heap->insertar(inc);
     }
 
-    // Extraer en orden: mas critico al menos critico: O(u log u)
     ranking = new Incidente*[u > 0 ? u : 1];
     while (!heap->estaVacio()) {
         ranking[pos++] = heap->SacarHeap();
@@ -124,7 +117,6 @@ int main(int argc, char* argv[]) {
     auto t1 = chrono::high_resolution_clock::now();
     double tiempoMs = chrono::duration<double, milli>(t1 - t0).count();
 
-    // Escribir ranking.csv
     ofstream outR(rutaRanking.c_str());
     if (!outR.is_open()) {
         cerr << "No se pudo escribir: " << rutaRanking << endl;
@@ -137,7 +129,6 @@ int main(int argc, char* argv[]) {
     }
     outR.close();
 
-    // Escribir metricas.txt
     ofstream outM(rutaMetricas.c_str());
     if (!outM.is_open()) {
         cerr << "No se pudo escribir: " << rutaMetricas << endl;
@@ -149,7 +140,6 @@ int main(int argc, char* argv[]) {
     outM << fixed << setprecision(3) << "tiempo_proceso_ms=" << tiempoMs << "\n";
     outM.close();
 
-    // Resumen por consola, mismo contenido que metricas.txt
     cout << "n=" << n << " u=" << u
          << " sondeos_hash=" << tabla.getSondeos()
          << " comparaciones_heap=" << heap->getComparaciones()
